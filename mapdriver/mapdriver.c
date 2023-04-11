@@ -10,22 +10,95 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <string.h>
 
 #include "common.h"
+
+static char* initials =
+"ACCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCH\n"
+"A                                                H\n"
+"A                                                H\n"
+"A                                                H\n"
+"A                                                H\n"
+"A                                                H\n"
+"A             :::        ::::::::    :::::::::   H\n"
+"A          :+: :+:     :+:    :+:   :+:    :+:   H\n"
+"A        +:+   +:+    +:+          +:+    +:+    H\n"
+"A      +#++:++#++:   +#++:++#++   +#++:++#+      H\n"
+"A     +#+     +#+          +#+   +#+    +#+      H\n"
+"A    #+#     #+#   #+#    #+#   #+#    #+#       H\n"
+"A   ###     ###    ########    #########         H\n"
+"A                                                H\n"
+"A                                                H\n"
+"A                                                H\n"
+"A                                                H\n"
+"A                                                H\n"
+"A                                                H\n"
+"A                                                H\n"
+"A                                                H\n"
+"A                                                H\n"
+"A                ::::::::       ::::::::         H\n"
+"A              :+:    :+:     :+:    :+:         H\n"
+"A             +:+            +:+                 H\n"
+"A            +#+            :#:                  H\n"
+"A           +#+            +#+   +#+#            H\n"
+"A          #+#    #+#     #+#    #+#             H\n"
+"A          ########       ########               H\n"
+"A                                                H\n"
+"A                                                H\n"
+"A                                                H\n"
+"A                                                H\n"
+"A                                                H\n"
+"A                                                H\n"
+"A                                                H\n"
+"A                                                H\n"
+"A                                                H\n"
+"A               :::    :::       :::    :::      H\n"
+"A              :+:    :+:       :+:    :+:       H\n"
+"A             +:+    +:+       +:+    +:+        H\n"
+"A            +#++:++#++       +#++:++#++         H\n"
+"A           +#+    +#+       +#+    +#+          H\n"
+"A          #+#    #+#       #+#    #+#           H\n"
+"A         ###    ###       ###    ###            H\n"
+"A                                                H\n"
+"A                                                H\n"
+"A                                                H\n"
+"A                                                H\n"
+"ACCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCH\n";
 
 int main(argc, argv)
 	int   argc;
 	char* argv[];
 {
-    char buf[BSIZE];
-	char *bufPtr = buf;
+    char buf[BSIZE];	
+	char intialsBuf[(BSIZE + 1)*BSIZE];
+	char *ptr = buf;
     int fd, i, j, n;
+	int bytes_written = 0;
+	int height, width;
+
+	int k = 0;
+	for (int i = 0; i < BSIZE; i++)
+	{
+		for (int j = 0; j < BSIZE; j++, k++)
+		{
+		    if (k < strlen(initials))
+		    {
+		        intialsBuf[k] = initials[k];
+		    } else {
+		        intialsBuf[k] = 0;
+		    }
+		}
+		intialsBuf[k] = '\n';
+		k++;
+	}
+	intialsBuf[k] = 0;
 
 	if((fd = open("/dev/asciimap", O_RDWR)) >= 0)
 	{
 		for(i = 10; i <= 60; i += 5)
 		{
-			n = read(fd, buf, i);
+			n = read(fd, ptr, i);
 
 			if(i != n)
 			{

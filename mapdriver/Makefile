@@ -22,7 +22,7 @@ INC=-I. -I/usr/include -I/usr/src/kernels/`uname -r`/include
 DRIVER=ascii.o
 MODULE=ascii.ko
 EXE=ascii-test
-OBJ=main.o $(DRIVER)
+OBJ=mapdriver.o $(DRIVER)
 
 obj-m += $(DRIVER)
 
@@ -50,11 +50,11 @@ register: $(DRIVER)
 	@echo "ASCII Character Device Driver has been built and registered."
 	@echo ""
 
-$(EXE): main.o
-	$(CC) main.o -o $(EXE)
+$(EXE): mapdriver.o
+	$(CC) mapdriver.o -o $(EXE)
 
-main.o: main.c common.h
-	$(CC) $(CC_OPTIONS) $(INC) -c main.c
+mapdriver.o: mapdriver.c common.h
+	$(CC) $(CC_OPTIONS) $(INC) -c mapdriver.c
 
 $(DRIVER): types.h ascii.h ascii.c
 	$(CC) $(CC_OPTIONS) $(INC) -c ascii.c
