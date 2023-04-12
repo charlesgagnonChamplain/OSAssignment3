@@ -14,7 +14,7 @@ fi
 
 # define function to generate a random ASCII character
 function genchar() {
-    printf \\$(printf '%03o' $((RANDOM % 93 + 33)))
+    printf \\$(printf '%03o' $(($RANDOM % 93 + 33)))
 }
 
 # set the maximum number of map generation attempts
@@ -25,7 +25,6 @@ attempts=0
 while [[ $attempts -lt $MAX_ATTEMPTS ]]; do
     # create an empty map
     map=''
-
     # fill the map with random ASCII characters
     for (( y=1; y<=$HEIGHT; y++ )); do
         # create a temporary line to count blank spaces
@@ -36,7 +35,7 @@ while [[ $attempts -lt $MAX_ATTEMPTS ]]; do
         # count the number of blank spaces in the line
         num_blanks=$(echo "$line" | tr -cd '[:blank:]' | wc -c)
         # check if the line has enough non-blank characters
-        if [[ $num_blanks -ge $(($WIDTH/2)) ]]; then
+        if [[ $num_blanks -le $(($WIDTH/2)) ]]; then
             map+="$line\n"
         else
             # force regeneration of the entire map
