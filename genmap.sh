@@ -14,7 +14,15 @@ fi
 
 # define function to generate a random ASCII character
 function genchar() {
-    printf \\$(printf '%03o' $(($RANDOM % 93 + 33)))
+    #create a character
+    char=$(($RANDOM % 93 + 33))
+    #check if character is equal to \ and reset if true
+    while [[ $char -eq 92 ]]; do
+        char=$(($RANDOM % 93 + 33))
+    done
+    
+    #return character
+    printf \\$(printf '%03o' $char)
 }
 
 # set the maximum number of map generation attempts
