@@ -21,7 +21,58 @@ static driver_status_t status =
 	{0},   /* buffer */
 	NULL,  /* buffer's ptr */
 	-1,    /* major */
-	-1     /* minor */
+	-1,     /* minor */
+	{0},
+	"ACCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCH\n"
+	"A                                                H\n"
+	"A                                                H\n"
+	"A                                                H\n"
+	"A                                                H\n"
+	"A                                                H\n"
+	"A             :::        ::::::::    :::::::::   H\n"
+	"A          :+: :+:     :+:    :+:   :+:    :+:   H\n"
+	"A        +:+   +:+    +:+          +:+    +:+    H\n"
+	"A      +#++:++#++:   +#++:++#++   +#++:++#+      H\n"
+	"A     +#+     +#+          +#+   +#+    +#+      H\n"
+	"A    #+#     #+#   #+#    #+#   #+#    #+#       H\n"
+	"A   ###     ###    ########    #########         H\n"
+	"A                                                H\n"
+	"A                                                H\n"
+	"A                                                H\n"
+	"A                                                H\n"
+	"A                                                H\n"
+	"A                                                H\n"
+	"A                                                H\n"
+	"A                                                H\n"
+	"A                                                H\n"
+	"A                ::::::::       ::::::::         H\n"
+	"A              :+:    :+:     :+:    :+:         H\n"
+	"A             +:+            +:+                 H\n"
+	"A            +#+            :#:                  H\n"
+	"A           +#+            +#+   +#+#            H\n"
+	"A          #+#    #+#     #+#    #+#             H\n"
+	"A          ########       ########               H\n"
+	"A                                                H\n"
+	"A                                                H\n"
+	"A                                                H\n"
+	"A                                                H\n"
+	"A                                                H\n"
+	"A                                                H\n"
+	"A                                                H\n"
+	"A                                                H\n"
+	"A                                                H\n"
+	"A               :::    :::       :::    :::      H\n"
+	"A              :+:    :+:       :+:    :+:       H\n"
+	"A             +:+    +:+       +:+    +:+        H\n"
+	"A            +#++:++#++       +#++:++#++         H\n"
+	"A           +#+    +#+       +#+    +#+          H\n"
+	"A          #+#    #+#       #+#    #+#           H\n"
+	"A         ###    ###       ###    ###            H\n"
+	"A                                                H\n"
+	"A                                                H\n"
+	"A                                                H\n"
+	"A                                                H\n"
+	"ACCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCH\n"
 };
 
 
@@ -134,44 +185,47 @@ static ssize_t device_read(file, buffer, length, offset)
     size_t       length;  /* The length of the buffer */
     loff_t*      offset;  /* Our offset in the file */
 {
-	/* Number of bytes actually written to the buffer */
-	int bytes_read = 0;
+	 int bytes_read = 0;
+    int lines_read = 0;
+    char *map_ptr;
 
-	/* Actually put the data into the buffer */
-	while(length > 0)
-	{
-		/* Because the buffer is in the user data segment,
-		 * not the kernel data segment, assignment wouldn't
-		 * work. Instead, we have to use put_user which
-		 * copies data from the kernel data segment to the
-		 * user data segment.
-		 */
-		put_user(status.curr_char, buffer++);
+    if (*offset >= MAP_SIZE) {
+        return 0; // end of file
+    }
 
-		length--;
-		bytes_read++;
-	}
+    // adjust buffer and length based on offset and remaining map size
+    if (*offset + length > MAP_SIZE) {
+        length = MAP_SIZE - *offset;
+    }
+    buffer += *offset;
+    
+    // determine starting line and number of lines to read
+    int start_line = *offset / (MAX_LINE_LEN + 1); // +1 for null terminator
+    int end_line = (*offset + length) / (MAX_LINE_LEN + 1);
+    int num_lines = end_line - start_line + 1;
 
-#ifdef _DEBUG
-	printk
-	(
-		"ascii::device_read() - Read %d bytes, %d left\n",
-		bytes_read,
-		length
-	);
-#endif
+    // copy lines into buffer using copy_to_user()
+    map_ptr = initials + (start_line * (MAX_LINE_LEN + 1)); // +1 for null terminator
+    while (lines_read < num_lines && *map_ptr != '\0') {
+        int len = strnlen(map_ptr, MAX_LINE_LEN); // limit to max line length
+        if (len > 0) {
+            if (copy_to_user(buffer, map_ptr, len) != 0) {
+                return -EFAULT; // error copying data
+            }
+            buffer += len;
+            bytes_read += len;
+            lines_read++;
+        }
+        map_ptr += MAX_LINE_LEN + 1; // move to next line
+    }
 
-	/* 
-	 * once code reaches 127 we have to wrap around to '0'
-	 */
-	if(++status.curr_char == 127)
-		status.curr_char = '0';
+    // update offset and status.curr_char
+    *offset += bytes_read;
+    status.curr_char = *(map_ptr - 1); // set curr_char to last char copied
 
-	/* Read functions are supposed to return the number
-	 * of bytes actually inserted into the buffer
-	 */
-	return bytes_read;
+    return bytes_read;
 }
+
 
 
 /* This function is called when somebody tries to write
@@ -241,6 +295,27 @@ init_module(void)
 		DEVICE_NAME,
 		status.major
 	);
+
+	// TODO
+	int k = 0;
+	for (int i = 0; i < BSIZE; i++)
+	{
+		for (int j = 0; j < BSIZE; j++, k++)
+		{
+		    if (k < BSIZE)
+		    {
+		        intialsBuf[k] = initials[k];
+		    } else {
+		        intialsBuf[k] = 0;
+		    }
+		}
+		intialsBuf[k] = '\n';
+		k++;
+	}
+	intialsBuf[k] = 0;
+
+
+
 
 	return SUCCESS;
 }

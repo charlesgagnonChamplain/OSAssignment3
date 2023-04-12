@@ -11,69 +11,22 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
+#include <types.h>
+#include <errno.h>
 
 #include "common.h"
 
-static char* initials =
-"ACCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCH\n"
-"A                                                H\n"
-"A                                                H\n"
-"A                                                H\n"
-"A                                                H\n"
-"A                                                H\n"
-"A             :::        ::::::::    :::::::::   H\n"
-"A          :+: :+:     :+:    :+:   :+:    :+:   H\n"
-"A        +:+   +:+    +:+          +:+    +:+    H\n"
-"A      +#++:++#++:   +#++:++#++   +#++:++#+      H\n"
-"A     +#+     +#+          +#+   +#+    +#+      H\n"
-"A    #+#     #+#   #+#    #+#   #+#    #+#       H\n"
-"A   ###     ###    ########    #########         H\n"
-"A                                                H\n"
-"A                                                H\n"
-"A                                                H\n"
-"A                                                H\n"
-"A                                                H\n"
-"A                                                H\n"
-"A                                                H\n"
-"A                                                H\n"
-"A                                                H\n"
-"A                ::::::::       ::::::::         H\n"
-"A              :+:    :+:     :+:    :+:         H\n"
-"A             +:+            +:+                 H\n"
-"A            +#+            :#:                  H\n"
-"A           +#+            +#+   +#+#            H\n"
-"A          #+#    #+#     #+#    #+#             H\n"
-"A          ########       ########               H\n"
-"A                                                H\n"
-"A                                                H\n"
-"A                                                H\n"
-"A                                                H\n"
-"A                                                H\n"
-"A                                                H\n"
-"A                                                H\n"
-"A                                                H\n"
-"A                                                H\n"
-"A               :::    :::       :::    :::      H\n"
-"A              :+:    :+:       :+:    :+:       H\n"
-"A             +:+    +:+       +:+    +:+        H\n"
-"A            +#++:++#++       +#++:++#++         H\n"
-"A           +#+    +#+       +#+    +#+          H\n"
-"A          #+#    #+#       #+#    #+#           H\n"
-"A         ###    ###       ###    ###            H\n"
-"A                                                H\n"
-"A                                                H\n"
-"A                                                H\n"
-"A                                                H\n"
-"ACCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCH\n";
 
 int main(argc, argv)
 	int   argc;
 	char* argv[];
 {
     char buf[BSIZE];	
-	char intialsBuf[(BSIZE + 1)*BSIZE];
-	char *ptr = buf;
     int fd, i, j, n;
+
+
+	char intialsBuf[(BSIZE)*BSIZE];
+	char *ptr = buf;
 	int bytes_written = 0;
 	int height, width;
 
@@ -82,7 +35,7 @@ int main(argc, argv)
 	{
 		for (int j = 0; j < BSIZE; j++, k++)
 		{
-		    if (k < strlen(initials))
+		    if (k < BSIZE)
 		    {
 		        intialsBuf[k] = initials[k];
 		    } else {
@@ -137,6 +90,33 @@ int main(argc, argv)
 	}
 
     exit(0);
+}
+
+ssize_t asciimap_read(int fid, char* charbuf, size_t count, char *ptr) {
+    int len, err;
+    char pos;
+
+    // number of bytes to copy
+    len = BSIZE - sizeof(ptr); // remaining bytes in buffer
+    if (len > count) {
+        len = count; // read to the count
+    }
+    if (len <= 0) {
+        return 0; // nothing to read
+    }
+
+    // current position
+    pos = map + ptr;
+
+    // copy data from buffer to user's buffer
+    err = copy_to_user(charbuf, pos, len);
+    if (err) {
+        return -EFAULT; // failed to copy data to user's buffer
+    }
+
+    // Update the file position and return the number of bytes read
+    *ptr += len;
+    return len;
 }
 
 /* EOF */

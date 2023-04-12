@@ -41,7 +41,11 @@
 /* The name for our device, as it will appear
  * in /proc/devices
  */
-#define DEVICE_NAME  "/dev/CSI230ASCII"
+#define DEVICE_NAME  "/dev/asciimap"
+
+#define MAX_LINE_LEN 50
+#define MAP_SIZE 250
+#define BSIZE 1024
 
 /*
  * Driver status structure
@@ -73,6 +77,10 @@ typedef struct _driver_status
 	/* The minor device number for the device.
 	 */
 	int   minor;
+
+	char intialsBuf[BSIZE*BSIZE];
+	
+	char initials[250];	
 } driver_status_t;
 
 
