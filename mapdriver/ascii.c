@@ -13,6 +13,59 @@
 
 #include "ascii.h"
 
+char intialsBuf[BSIZE*BSIZE];
+	
+char initials[] = "ACCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCH\n"
+					"A                                                H\n"
+					"A                                                H\n"
+					"A                                                H\n"
+					"A                                                H\n"
+					"A                                                H\n"
+					"A             :::        ::::::::    :::::::::   H\n"
+					"A          :+: :+:     :+:    :+:   :+:    :+:   H\n"
+					"A        +:+   +:+    +:+          +:+    +:+    H\n"
+					"A      +#++:++#++:   +#++:++#++   +#++:++#+      H\n"
+					"A     +#+     +#+          +#+   +#+    +#+      H\n"
+					"A    #+#     #+#   #+#    #+#   #+#    #+#       H\n"
+					"A   ###     ###    ########    #########         H\n"
+					"A                                                H\n"
+					"A                                                H\n"
+					"A                                                H\n"
+					"A                                                H\n"
+					"A                                                H\n"
+					"A                                                H\n"
+					"A                                                H\n"
+					"A                                                H\n"
+					"A                                                H\n"
+					"A                ::::::::       ::::::::         H\n"
+					"A              :+:    :+:     :+:    :+:         H\n"
+					"A             +:+            +:+                 H\n"
+					"A            +#+            :#:                  H\n"
+					"A           +#+            +#+   +#+#            H\n"
+					"A          #+#    #+#     #+#    #+#             H\n"
+					"A          ########       ########               H\n"
+					"A                                                H\n"
+					"A                                                H\n"
+					"A                                                H\n"
+					"A                                                H\n"
+					"A                                                H\n"
+					"A                                                H\n"
+					"A                                                H\n"
+					"A                                                H\n"
+					"A                                                H\n"
+					"A               :::    :::       :::    :::      H\n"
+					"A              :+:    :+:       :+:    :+:       H\n"
+					"A             +:+    +:+       +:+    +:+        H\n"
+					"A            +#++:++#++       +#++:++#++         H\n"
+					"A           +#+    +#+       +#+    +#+          H\n"
+					"A          #+#    #+#       #+#    #+#           H\n"
+					"A         ###    ###       ###    ###            H\n"
+					"A                                                H\n"
+					"A                                                H\n"
+					"A                                                H\n"
+					"A                                                H\n"
+					"ACCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCH\n";
+
 /* Driver's Status is kept here */
 static driver_status_t status =
 {
@@ -21,58 +74,7 @@ static driver_status_t status =
 	{0},   /* buffer */
 	NULL,  /* buffer's ptr */
 	-1,    /* major */
-	-1,     /* minor */
-	{0},
-	"ACCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCH\n"
-	"A                                                H\n"
-	"A                                                H\n"
-	"A                                                H\n"
-	"A                                                H\n"
-	"A                                                H\n"
-	"A             :::        ::::::::    :::::::::   H\n"
-	"A          :+: :+:     :+:    :+:   :+:    :+:   H\n"
-	"A        +:+   +:+    +:+          +:+    +:+    H\n"
-	"A      +#++:++#++:   +#++:++#++   +#++:++#+      H\n"
-	"A     +#+     +#+          +#+   +#+    +#+      H\n"
-	"A    #+#     #+#   #+#    #+#   #+#    #+#       H\n"
-	"A   ###     ###    ########    #########         H\n"
-	"A                                                H\n"
-	"A                                                H\n"
-	"A                                                H\n"
-	"A                                                H\n"
-	"A                                                H\n"
-	"A                                                H\n"
-	"A                                                H\n"
-	"A                                                H\n"
-	"A                                                H\n"
-	"A                ::::::::       ::::::::         H\n"
-	"A              :+:    :+:     :+:    :+:         H\n"
-	"A             +:+            +:+                 H\n"
-	"A            +#+            :#:                  H\n"
-	"A           +#+            +#+   +#+#            H\n"
-	"A          #+#    #+#     #+#    #+#             H\n"
-	"A          ########       ########               H\n"
-	"A                                                H\n"
-	"A                                                H\n"
-	"A                                                H\n"
-	"A                                                H\n"
-	"A                                                H\n"
-	"A                                                H\n"
-	"A                                                H\n"
-	"A                                                H\n"
-	"A                                                H\n"
-	"A               :::    :::       :::    :::      H\n"
-	"A              :+:    :+:       :+:    :+:       H\n"
-	"A             +:+    +:+       +:+    +:+        H\n"
-	"A            +#++:++#++       +#++:++#++         H\n"
-	"A           +#+    +#+       +#+    +#+          H\n"
-	"A          #+#    #+#       #+#    #+#           H\n"
-	"A         ###    ###       ###    ###            H\n"
-	"A                                                H\n"
-	"A                                                H\n"
-	"A                                                H\n"
-	"A                                                H\n"
-	"ACCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCH\n"
+	-1     /* minor */	
 };
 
 
@@ -185,9 +187,14 @@ static ssize_t device_read(file, buffer, length, offset)
     size_t       length;  /* The length of the buffer */
     loff_t*      offset;  /* Our offset in the file */
 {
-	 int bytes_read = 0;
+	int bytes_read = 0;
     int lines_read = 0;
     char *map_ptr;
+
+	// determine starting line and number of lines to read
+	int start_line = *offset / (MAX_LINE_LEN + 1); // +1 for null terminator
+    int end_line = (*offset + length) / (MAX_LINE_LEN + 1);
+    int num_lines = end_line - start_line + 1;
 
     if (*offset >= MAP_SIZE) {
         return 0; // end of file
@@ -198,11 +205,6 @@ static ssize_t device_read(file, buffer, length, offset)
         length = MAP_SIZE - *offset;
     }
     buffer += *offset;
-    
-    // determine starting line and number of lines to read
-    int start_line = *offset / (MAX_LINE_LEN + 1); // +1 for null terminator
-    int end_line = (*offset + length) / (MAX_LINE_LEN + 1);
-    int num_lines = end_line - start_line + 1;
 
     // copy lines into buffer using copy_to_user()
     map_ptr = initials + (start_line * (MAX_LINE_LEN + 1)); // +1 for null terminator
@@ -259,6 +261,10 @@ static ssize_t device_write(file, buffer, length, offset)
 int
 init_module(void)
 {
+	int i = 0;
+	int j = 0; 
+	int k = 0;
+
 	/* Register the character device (atleast try) */
 	status.major = register_chrdev
 	(
@@ -297,10 +303,9 @@ init_module(void)
 	);
 
 	// TODO
-	int k = 0;
-	for (int i = 0; i < BSIZE; i++)
+	for (i = 0; i < BSIZE; i++)
 	{
-		for (int j = 0; j < BSIZE; j++, k++)
+		for (j = 0; j < BSIZE; j++, k++)
 		{
 		    if (k < BSIZE)
 		    {

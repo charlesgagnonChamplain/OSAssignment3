@@ -78,9 +78,6 @@ typedef struct _driver_status
 	 */
 	int   minor;
 
-	char intialsBuf[BSIZE*BSIZE];
-	
-	char initials[250];	
 } driver_status_t;
 
 
