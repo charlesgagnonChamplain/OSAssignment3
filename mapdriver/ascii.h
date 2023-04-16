@@ -45,7 +45,6 @@
 
 #define MAX_LINE_LEN 50
 #define MAP_SIZE 250
-#define BSIZE 1024
 
 /*
  * Driver status structure

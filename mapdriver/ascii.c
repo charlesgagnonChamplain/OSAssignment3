@@ -13,8 +13,12 @@
 
 #include "ascii.h"
 
-char intialsBuf[BSIZE*BSIZE];
-	
+#define BSIZE 1024
+static char buffer_data[BSIZE];
+static int buffer_length = 0;
+static int buffer_current_pointer = 0;
+
+char initialsBuf[BSIZE*BSIZE];
 char initials[] = "ACCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCH\n"
 					"A                                                H\n"
 					"A                                                H\n"
@@ -64,7 +68,7 @@ char initials[] = "ACCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCH\n"
 					"A                                                H\n"
 					"A                                                H\n"
 					"A                                                H\n"
-					"ACCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCH\n";
+					"ACCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCH\0";
 
 /* Driver's Status is kept here */
 static driver_status_t status =
@@ -182,21 +186,21 @@ static int device_release(inode, file)
  * read from it.
  */
 static ssize_t device_read(file, buffer, length, offset)
-	struct file* file;
+    struct file* file;
     char*        buffer;  /* The buffer to fill with data */
     size_t       length;  /* The length of the buffer */
     loff_t*      offset;  /* Our offset in the file */
 {
-	int bytes_read = 0;
+    int bytes_read = 0;
     int lines_read = 0;
     char *map_ptr;
 
-	// determine starting line and number of lines to read
-	int start_line = *offset / (MAX_LINE_LEN + 1); // +1 for null terminator
+    // determine starting line, end line, and number of lines to read
+    int start_line = *offset / (MAX_LINE_LEN + 1);
     int end_line = (*offset + length) / (MAX_LINE_LEN + 1);
     int num_lines = end_line - start_line + 1;
 
-    if (*offset >= MAP_SIZE) {
+    if (*offset >= MAP_SIZE || num_lines <= 0) {
         return 0; // end of file
     }
 
@@ -205,7 +209,7 @@ static ssize_t device_read(file, buffer, length, offset)
         length = MAP_SIZE - *offset;
     }
     buffer += *offset;
-
+    
     // copy lines into buffer using copy_to_user()
     map_ptr = initials + (start_line * (MAX_LINE_LEN + 1)); // +1 for null terminator
     while (lines_read < num_lines && *map_ptr != '\0') {
@@ -229,7 +233,6 @@ static ssize_t device_read(file, buffer, length, offset)
 }
 
 
-
 /* This function is called when somebody tries to write
  * into our device file.
  */
@@ -240,6 +243,7 @@ static ssize_t device_write(file, buffer, length, offset)
 	loff_t*      offset;  /* Our offset in the file */
 {
 	int nbytes = 0;
+	int space_left;
 
 #ifdef _DEBUG
 	printk
@@ -250,10 +254,25 @@ static ssize_t device_write(file, buffer, length, offset)
 	);
 #endif
 
-	/* Rewind ASCII char back to '0' */
-	status.curr_char = '0';
+	space_left = BSIZE - *offset;
+    if (length > space_left) {
+        /* Cannot write beyond the end of the buffer */
+        return -ENOSPC;
+    }
 
-	return nbytes;
+    /* Copy the user buffer to the driver buffer */
+    if (copy_from_user(&buffer_data[*offset], buffer, length) != 0) {
+        return -EFAULT;
+    }
+
+    /* Update the current buffer pointer and length */
+    *offset += length;
+    buffer_length = *offset;
+    buffer_current_pointer = *offset;
+
+    nbytes = length;
+
+    return nbytes;
 }
 
 
@@ -309,18 +328,15 @@ init_module(void)
 		{
 		    if (k < BSIZE)
 		    {
-		        intialsBuf[k] = initials[k];
+		        initialsBuf[k] = initials[k];
 		    } else {
-		        intialsBuf[k] = 0;
+		        initialsBuf[k] = 0;
 		    }
 		}
-		intialsBuf[k] = '\n';
+		initialsBuf[k] = '\n';
 		k++;
 	}
-	intialsBuf[k] = 0;
-
-
-
+	initialsBuf[k] = 0;
 
 	return SUCCESS;
 }
