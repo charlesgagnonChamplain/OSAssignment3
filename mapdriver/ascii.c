@@ -275,6 +275,74 @@ static ssize_t device_write(file, buffer, length, offset)
     return nbytes;
 }
 
+static long device_ioctl(struct file *file, unsigned int ioctl_num, unsigned long ioctl_param) {
+    switch (ioctl_num) {
+        case 0: // Reset map back to original default
+            buffer_length = sizeof(initials);
+            memcpy(buffer_data, initials, buffer_length);
+            buffer_current_pointer = 0;
+            return 0;
+        case 1: // Zero out entire buffer
+            memset(buffer_data, 0, sizeof(buffer_data));
+            buffer_length = 0;
+            buffer_current_pointer = 0;
+            return 0;
+        case 2: // Check map for consistency
+            {
+                int i;
+                int width = 0;
+                int line_length = 0;
+                int line_count = 0;
+                for (i = 0; i < buffer_length; i++) {
+                    char c = buffer_data[i];
+                    if (c == '\n') {
+                        if (line_count == 0) {
+                            // First line, calculate width
+                            width = line_length;
+                        } else {
+                            // Check if line length is a multiple of width
+                            if (line_length % width != 0) {
+                                return -EINVAL;
+                            }
+                        }
+                        line_length = 0;
+                        line_count++;
+                    } else {
+                        // Check if printable ASCII character
+                        if (c < 32 || c == 127) {
+                            return -EINVAL;
+                        }
+                        line_length++;
+                    }
+                }
+                return 0;
+            }
+        default:
+            return -EINVAL;
+    }
+}
+static loff_t device_lseek(struct file *file, loff_t offset, int whence) {
+    loff_t new_pointer = 0;
+    switch (whence) {
+        case SEEK_SET: // Seek from beginning of file
+            new_pointer = offset;
+            break;
+        case SEEK_CUR: // Seek from current position
+            new_pointer = buffer_current_pointer + offset;
+            break;
+        case SEEK_END: // Seek from end of file
+            new_pointer = buffer_length + offset;
+            break;
+        default:
+            return -EINVAL;
+    }
+    if (new_pointer < 0 || new_pointer > buffer_length) {
+        return -EINVAL;
+    }
+    buffer_current_pointer = new_pointer;
+    return buffer_current_pointer;
+}
+
 
 /* Initialize the module - Register the character device */
 int

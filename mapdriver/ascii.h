@@ -87,6 +87,8 @@ static int device_open(struct inode*, struct file*);
 static int  device_release(struct inode*, struct file*);
 static ssize_t device_read(struct file*, char*, size_t, loff_t*);
 static ssize_t device_write(struct file*, const char*, size_t, loff_t*);
+static long device_ioctl(struct file*, unsigned int, unsigned long);
+static loff_t device_lseek(struct file *file, loff_t offset, int whence);
 
 /* Kernel module-related */
 
