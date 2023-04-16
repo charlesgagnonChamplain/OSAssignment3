@@ -18,6 +18,8 @@ static char buffer_data[BSIZE];
 static int buffer_length = 0;
 static int buffer_current_pointer = 0;
 
+
+
 char initialsBuf[BSIZE*BSIZE];
 char initials[] = "ACCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCH\n"
 					"A                                                H\n"

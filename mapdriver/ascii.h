@@ -44,7 +44,7 @@
 #define DEVICE_NAME  "/dev/asciimap"
 
 #define MAX_LINE_LEN 50
-#define MAP_SIZE 250
+#define MAP_SIZE 2600
 
 /*
  * Driver status structure
