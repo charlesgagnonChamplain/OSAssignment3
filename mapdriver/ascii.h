@@ -15,12 +15,12 @@
 #ifndef _ASCII_DEVICE_H
 #define _ASCII_DEVICE_H
 
-
 /* The necessary header files */
 
 /* Standard in kernel modules */
 #include <linux/kernel.h>   /* We're doing kernel work */
 #include <linux/module.h>   /* Specifically, a module */
+#include <linux/ioctl.h>
 
 /* For character devices */
 #include <linux/fs.h>       /* The character device
@@ -32,19 +32,20 @@
 /* Return codes */
 #define SUCCESS      0
 
-
 /* Device Declarations **************************** */
 
 /* The maximum length of the message from the device */
-#define DRV_BUF_SIZE 80
+#define BSIZE 1024
+
+#define MAJOR_NUM 	130
+#define IOCTL_RESET_MAP 	_IO(MAJOR_NUM, 0) /*reset to the default map*/
+#define IOCTL_ZERO_OUT		_IO(MAJOR_NUM, 1) /*zeros out the buffer */
+#define IOCTL_CHECK_CONSISTENCY _IO(MAJOR_NUM, 2) /*checks that consistency*/
 
 /* The name for our device, as it will appear
  * in /proc/devices
  */
 #define DEVICE_NAME  "/dev/asciimap"
-
-#define MAX_LINE_LEN 50
-#define MAP_SIZE 2600
 
 /*
  * Driver status structure
@@ -61,12 +62,16 @@ typedef struct _driver_status
 	bool  busy;
 
 	/* The message the device will give when asked */
-	char  buf[DRV_BUF_SIZE];
+	char  buf[BSIZE];
 
 	/* How far did the process reading the message
 	 * get? Useful if the message is larger than the size
 	 * of the buffer we get to fill in device_read.
 	 */
+
+	/* Map size */
+	int map_byte_length;
+
 	char* buf_ptr;
 
 	/* The major device number for the device.
@@ -87,8 +92,8 @@ static int device_open(struct inode*, struct file*);
 static int  device_release(struct inode*, struct file*);
 static ssize_t device_read(struct file*, char*, size_t, loff_t*);
 static ssize_t device_write(struct file*, const char*, size_t, loff_t*);
-static long device_ioctl(struct file*, unsigned int, unsigned long);
-static loff_t device_lseek(struct file *file, loff_t offset, int whence);
+static loff_t device_seek(struct file *, loff_t, int);
+static int device_ioctl(struct inode*, struct file*, unsigned int, unsigned long);
 
 /* Kernel module-related */
 

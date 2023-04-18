@@ -14,14 +14,12 @@
 #include "ascii.h"
 
 #define BSIZE 1024
-static char buffer_data[BSIZE];
-static int buffer_length = 0;
-static int buffer_current_pointer = 0;
-
-
+#define STATIC_ROWSIZE 50
+#define STATIC_COLSIZE 51
+#define STATIC_BSIZE ((STATIC_COLSIZE * STATIC_ROWSIZE) + 1)
 
 char initialsBuf[BSIZE*BSIZE];
-char initials[] = "ACCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCH\n"
+const char* initials = "ACCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCH\n"
 					"A                                                H\n"
 					"A                                                H\n"
 					"A                                                H\n"
@@ -78,11 +76,25 @@ static driver_status_t status =
 	'a',   /* Starting ASCII char is '0' */
 	false, /* Not busy at the beginning */
 	{0},   /* buffer */
+	0,	   /* map size */
 	NULL,  /* buffer's ptr */
 	-1,    /* major */
 	-1     /* minor */	
 };
 
+static int memory_copy(char* dst, const char* src)
+{
+	int count = 0;
+	{
+		while ((*dst++ = *src++))
+		{
+			count++;
+		}
+		count++;
+	}
+	return count;
+
+}
 
 /* This function is called whenever a process
  * attempts to open the device file
@@ -97,10 +109,6 @@ static int device_open(inode, file)
 	printk("device_open(%p,%p)\n", inode, file);
 #endif
 
-	/* This is how you get the minor device number in
-	 * case you have more than one physical device using
-	 * the driver.
-	 */
 	status.minor = inode->i_rdev >> 8;
 	status.minor = inode->i_rdev & 0xFF;
 
@@ -118,28 +126,6 @@ static int device_open(inode, file)
 	if(status.busy)
 		return -EBUSY;
 
-	/* If this was a process, we would have had to be
-	 * more careful here.
-	 *
-	 * In the case of processes, the danger would be
-	 * that one process might have check busy
-	 * and then be replaced by the schedualer by another
-	 * process which runs this function. Then, when the
-	 * first process was back on the CPU, it would assume
-	 * the device is still not open.
-	 *
-	 * However, Linux guarantees that a process won't be
-	 * replaced while it is running in kernel context.
-	 *
-	 * In the case of SMP, one CPU might increment
-	 * busy while another CPU is here, right after
-	 * the check. However, in version 2.0 of the
-	 * kernel this is not a problem because there's a lock
-	 * to guarantee only one CPU will be kernel module at
-	 * the same time. This is bad in  terms of
-	 * performance, so version 2.2 changed it.
-	 */
-
 	status.busy = true;
 
 	/* Initialize the message. */
@@ -150,14 +136,6 @@ static int device_open(inode, file)
 		counter++,
 		"Hello, world\n"
 	);
-
-	/* The only reason we're allowed to do this sprintf
-	 * is because the maximum length of the message
-	 * (assuming 32 bit integers - up to 10 digits
-	 * with the minus sign) is less than DRV_BUF_SIZE, which
-	 * is 80. BE CAREFUL NOT TO OVERFLOW BUFFERS,
-	 * ESPECIALLY IN THE KERNEL!!!
-	 */
 
 	status.buf_ptr = status.buf;
 
@@ -191,45 +169,20 @@ static ssize_t device_read(file, buffer, length, offset)
     struct file* file;
     char*        buffer;  /* The buffer to fill with data */
     size_t       length;  /* The length of the buffer */
-    loff_t*      offset;  /* Our offset in the file */
+    loff_t      offset;  /* Our offset in the file */
 {
     int bytes_read = 0;
-    int lines_read = 0;
-    char *map_ptr;
+    int error = 0;
 
-    // determine starting line, end line, and number of lines to read
-    int start_line = *offset / (MAX_LINE_LEN + 1);
-    int end_line = (*offset + length) / (MAX_LINE_LEN + 1);
-    int num_lines = end_line - start_line + 1;
-
-    if (*offset >= MAP_SIZE || num_lines <= 0) {
-        return 0; // end of file
-    }
-
-    // adjust buffer and length based on offset and remaining map size
-    if (*offset + length > MAP_SIZE) {
-        length = MAP_SIZE - *offset;
-    }
-    buffer += *offset;
-    
-    // copy lines into buffer using copy_to_user()
-    map_ptr = initials + (start_line * (MAX_LINE_LEN + 1)); // +1 for null terminator
-    while (lines_read < num_lines && *map_ptr != '\0') {
-        int len = strnlen(map_ptr, MAX_LINE_LEN); // limit to max line length
-        if (len > 0) {
-            if (copy_to_user(buffer, map_ptr, len) != 0) {
-                return -EFAULT; // error copying data
-            }
-            buffer += len;
-            bytes_read += len;
-            lines_read++;
+    while (length > 0 &&status.buf_ptr) {
+        error = put_user(*status.buf_ptr++, buffer++);
+        if (error == -EFAULT)
+        {
+            return error;
         }
-        map_ptr += MAX_LINE_LEN + 1; // move to next line
+        bytes_read = 0;
+        length--;
     }
-
-    // update offset and status.curr_char
-    *offset += bytes_read;
-    status.curr_char = *(map_ptr - 1); // set curr_char to last char copied
 
     return bytes_read;
 }
@@ -244,116 +197,142 @@ static ssize_t device_write(file, buffer, length, offset)
 	size_t       length;  /* The length of the buffer */
 	loff_t*      offset;  /* Our offset in the file */
 {
-	int nbytes = 0;
-	int space_left;
+	int bytes_written = 0;
+	int error = 0;
 
-#ifdef _DEBUG
-	printk
-	(
-		"ascii::device_write() - Length: [%d], Buf: [%s]\n",
-		length,
-		buffer
-	);
-#endif
+	while (length > 0 && status.buf_ptr - status.buf < BSIZE - 1) /* saving room for \0 */
+	{
+		/* get_user is the weirdest macro ever. */
+		error = get_user(*status.buf_ptr, buffer);
 
-	space_left = BSIZE - *offset;
-    if (length > space_left) {
-        /* Cannot write beyond the end of the buffer */
-        return -ENOSPC;
-    }
+		if (error == -EFAULT)
+		{
+			return error;
+		}
 
-    /* Copy the user buffer to the driver buffer */
-    if (copy_from_user(&buffer_data[*offset], buffer, length) != 0) {
-        return -EFAULT;
-    }
+		status.buf_ptr++;
+		buffer++;
+		bytes_written++;
+		length--;
 
-    /* Update the current buffer pointer and length */
-    *offset += length;
-    buffer_length = *offset;
-    buffer_current_pointer = *offset;
+		if (status.buf_ptr - status.buf > status.map_byte_length)
+		{
+			status.map_byte_length++;
+		}
+	}
 
-    nbytes = length;
+	if (status.buf_ptr - status.buf == status.map_byte_length)
+	{
+		*(status.buf_ptr + 1) = '\0';
+	}
 
-    return nbytes;
+	return bytes_written;
 }
 
-static long device_ioctl(struct file *file, unsigned int ioctl_num, unsigned long ioctl_param) {
+static int device_ioctl(inode, file, ioctl_num, ioctl_param)
+	struct inode* inode;
+	struct file* file;
+	unsigned int ioctl_num; /* number and param for ioctl  */
+	unsigned long ioctl_param;
+{
+	char *temp;
+
     switch (ioctl_num) {
-        case 0: // Reset map back to original default
-            buffer_length = sizeof(initials);
-            memcpy(buffer_data, initials, buffer_length);
-            buffer_current_pointer = 0;
-            return 0;
-        case 1: // Zero out entire buffer
-            memset(buffer_data, 0, sizeof(buffer_data));
-            buffer_length = 0;
-            buffer_current_pointer = 0;
-            return 0;
-        case 2: // Check map for consistency
+        case IOCTL_RESET_MAP: // Reset map back to original default
+            temp = status.buf;
+            while(*temp)
             {
-                int i;
-                int width = 0;
-                int line_length = 0;
-                int line_count = 0;
-                for (i = 0; i < buffer_length; i++) {
-                    char c = buffer_data[i];
-                    if (c == '\n') {
-                        if (line_count == 0) {
-                            // First line, calculate width
-                            width = line_length;
-                        } else {
-                            // Check if line length is a multiple of width
-                            if (line_length % width != 0) {
-                                return -EINVAL;
-                            }
-                        }
-                        line_length = 0;
-                        line_count++;
-                    } else {
-                        // Check if printable ASCII character
-                        if (c < 32 || c == 127) {
-                            return -EINVAL;
-                        }
-                        line_length++;
-                    }
-                }
-                return 0;
+                *temp = '\0';
+                temp++;
             }
+            status.map_byte_length = memory_copy(status.buf, initials) - 1;
+            status.buf_ptr = status.buf;
+            break;
+        case IOCTL_ZERO_OUT: // Zero out entire buffer
+            temp = status.buf;
+            while(*temp)
+            {
+                *temp = '\0';
+                temp++;
+            }
+            status.buf_ptr = status.buf;
+            break;
+        case IOCTL_CHECK_CONSISTENCY: // Check map for consistency
+            int width = 0;
+            int line_count = 0;
+            temp = status.buf;
+            while(*temp && *temp != '\n')
+            {
+                width++;
+                temp++;
+            }
+
+            temp = status.buf;
+
+            while(*temp)
+            {
+                line_count++;
+                if(*temp == '\n')
+                {
+                    line_count--;
+                    if(line_count != width)
+                        return -1;
+                    else
+                        line_count = 0;
+                }
+                else if (*temp < 32)
+                    return -1;
+            }
+            temp++;
+            break;
         default:
-            return -EINVAL;
-    }
+            break;
+	}
 }
-static loff_t device_lseek(struct file *file, loff_t offset, int whence) {
-    loff_t new_pointer = 0;
+
+
+static loff_t device_seek(struct file* file, loff_t offset, int whence) {
+    int error = 1;
+    int new_pointer;
     switch (whence) {
         case SEEK_SET: // Seek from beginning of file
-            new_pointer = offset;
+            if(offset < BSIZE && offset >= 0)
+            {
+                status.buf_ptr = (status.buf + offset);
+                error = 0;
+            }
             break;
         case SEEK_CUR: // Seek from current position
-            new_pointer = buffer_current_pointer + offset;
+            new_pointer = (status.buf_ptr - status.buf) + offset;
+            if(new_pointer < BSIZE && new_pointer > 0)
+            {
+                status.buf_ptr = (status.buf + new_pointer);
+                error = 0;
+            }
             break;
         case SEEK_END: // Seek from end of file
-            new_pointer = buffer_length + offset;
+            if (offset <= 0 && offset > BSIZE)
+            {
+                status.buf_ptr = ((status.buf + BSIZE - 1) + offset);
+                error = 0;
+            }
             break;
         default:
-            return -EINVAL;
+            break;
     }
-    if (new_pointer < 0 || new_pointer > buffer_length) {
-        return -EINVAL;
+    if (error == 1) {
+        return -ESPIPE;
     }
-    buffer_current_pointer = new_pointer;
-    return buffer_current_pointer;
+
+    return 0;
 }
+
 
 
 /* Initialize the module - Register the character device */
 int
 init_module(void)
 {
-	int i = 0;
-	int j = 0; 
-	int k = 0;
-
 	/* Register the character device (atleast try) */
 	status.major = register_chrdev
 	(
@@ -390,23 +369,6 @@ init_module(void)
 		DEVICE_NAME,
 		status.major
 	);
-
-	// TODO
-	for (i = 0; i < BSIZE; i++)
-	{
-		for (j = 0; j < BSIZE; j++, k++)
-		{
-		    if (k < BSIZE)
-		    {
-		        initialsBuf[k] = initials[k];
-		    } else {
-		        initialsBuf[k] = 0;
-		    }
-		}
-		initialsBuf[k] = '\n';
-		k++;
-	}
-	initialsBuf[k] = 0;
 
 	return SUCCESS;
 }
