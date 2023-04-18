@@ -66,4 +66,3 @@ done
 # if the maximum number of attempts is reached, print an error message to STDERR and exit with error code
 echo "Error: could not generate a map with at least 50% non-blank characters after $MAX_ATTEMPTS attempts" >&2
 exit 1
-
