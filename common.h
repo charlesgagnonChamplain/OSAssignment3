@@ -35,7 +35,6 @@
 #include <time.h>   /* time(), ctime() */
 
 /* Debugging/error/logging functions */
-/* TODO: implement them */
 void print(char* format, ...);
 void log(int fd, char* format, ...);
 void slog(FILE* stream, char* format, ...);

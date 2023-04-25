@@ -1,15 +1,33 @@
-#ifndef COMMON_H
 #define COMMON_H
-
-#include "../ascii.h"
 
 #define PORT 23032
 #define IP "127.0.0.1"
 
 #define REQUEST 'M'
+#define ERROR "E"
+#define BSIZE 1024
+#define MSGLEN (BSIZE + 50)
 
-typedef struct client_request
+typedef struct client_map_request
 {
 	int width;
 	int height;
-} client_req;
+} client_map_req;
+
+typedef struct client_error_request
+{
+	int err_len;
+} client_err_req;
+
+typedef struct server_error_response
+{
+	int err_len;
+} server_err_resp;
+
+typedef struct server_map_response
+{
+	int width;
+	int height;
+} server_map_resp;
+
+
