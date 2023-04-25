@@ -30,7 +30,7 @@ int main (int argc, char *argv[])
 	char recvBuff[BSIZE];
 
 	char reqBuff[3];
-	reqBuff[0] = "M";
+	reqBuff[0] = 'M';
 
 	int port = PORT;
 	char* ip = IP;
@@ -40,11 +40,6 @@ int main (int argc, char *argv[])
 	{
 		ip = argv[1];
 	}
-	if(argc == 4)
-	{
-		width = argv[2];
-		height = argv[3];
-	}	
 
 	if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
     {
@@ -63,17 +58,21 @@ int main (int argc, char *argv[])
        return 1;
     } 
 
-	if(width != 0 && height != 0)
-	{
-		reqBuff[1] = width;
-		reqBuff[2] = height;
-		write(sockfd, reqBuff, 3);
-	}
-	else
-	{
-		reqBuff[1] = 0;
-		write(sockfd, reqBuff, 2);
-	}	
+	printf("Enter width and height (separated by a space)");
+    printf("If no customization of size is required, enter 0 for both: ");
+    scanf("%d %d", &width, &height);
+
+    if(width == 0 && height == 0)
+    {
+        reqBuff[1] = 0;
+        write(sockfd, reqBuff, 2);
+    }
+    else
+    {
+        reqBuff[1] = width;
+        reqBuff[2] = height;
+        write(sockfd, reqBuff, 3);
+    }    
 
 	n = read(sockfd, recvBuff, (sizeof(recvBuff) - 1));
 	if (n < 0)
@@ -82,11 +81,11 @@ int main (int argc, char *argv[])
 		return 1;
 	}
 
-	if (recvBuff[0] == "E")
+	if (recvBuff[0] == 'E')
 	{
-		printf(stderr, "Error: %s\n", recvBuff + 1);
+		fprintf(stderr, "Error: %s\n", recvBuff + 1);
 	}
-	else if (recvBuff[0] == "M")
+	else if (recvBuff[0] == 'M')
 	{
 		int width = recvBuff[1];
 		int height = recvBuff[2];
@@ -96,7 +95,7 @@ int main (int argc, char *argv[])
 	}
 	else
 	{
-		printf(stderr, "Error : Unrecognized protocol message\n");
+		fprintf(stderr, "Error : Unrecognized protocol message\n");
 	}
 
 	close(sockfd);
