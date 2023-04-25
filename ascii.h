@@ -111,13 +111,13 @@ struct file_operations Fops =
 	.open = device_open, /* open */
 	.read = device_read, /* read */
 	.write = device_write, /* write */
-	.release = device_release  /* a.k.a. close */
+	.release = device_release,  /* a.k.a. close */
+	.seek = device_seek,   /* seek */
+	.unlocked_ioctl = device_ioctl   /* ioctl */
 #if 0
 	.owner = NULL,   /* owner */
-	.seek = NULL,   /* seek */
 	.readdir = NULL,   /* readdir */
 	.poll = NULL,   /* poll/select */
-	.unlocked_ioctl = NULL,   /* ioctl */
 	.mmap = NULL,   /* mmap */
 	.flush = NULL,   /* flush */
 #endif

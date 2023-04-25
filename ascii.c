@@ -82,6 +82,8 @@ static driver_status_t status =
 	-1     /* minor */	
 };
 
+/* TODO: get user and put user*/
+
 static int memory_copy(char* dst, const char* src)
 {
 	int count = 0;
@@ -180,13 +182,12 @@ static ssize_t device_read(file, buffer, length, offset)
         {
             return error;
         }
-        bytes_read = 0;
+        bytes_read++;
         length--;
     }
 
     return bytes_read;
 }
-
 
 /* This function is called when somebody tries to write
  * into our device file.
@@ -333,6 +334,25 @@ static loff_t device_seek(struct file* file, loff_t offset, int whence) {
 int
 init_module(void)
 {
+	int i = 0;
+	int j = 0; 
+	int k = 0;	
+	for (i = 0; i < BSIZE; i++)
+	{
+		for (j = 0; j < BSIZE; j++, k++)
+		{
+		    if (k < BSIZE)
+		    {
+		        initialsBuf[k] = initials[k];
+		    } else {
+		        initialsBuf[k] = 0;
+		    }
+		}
+		initialsBuf[k] = '\n';
+		k++;
+	}
+	initialsBuf[k] = 0;
+
 	/* Register the character device (atleast try) */
 	status.major = register_chrdev
 	(

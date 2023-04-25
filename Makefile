@@ -16,7 +16,7 @@ MODULE=asciimap.ko
 obj-m += $(DRIVER)
 
 all:
-	sudo mknod -m 666 /dev/asciimap c 235 1	
+	sudo mknod -m 666 /dev/asciimap c 236 1	
 	$(CC) $(CC_OPTIONS) $(FT) -o forkTest
 	DIR=$(PWD)
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
@@ -30,8 +30,17 @@ build:
 clean:
 	rm -f $(DRIVER)
 	DIR=$(PWD)
+	rm main forkTest
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) clean
 	cd $(DIR)
+
+test:
+	$(CC) $(WARNINGS) forkTest.c -o forkTest.o
+	./forkTest.o
+
+main:
+	$(CC) $(WARNINGS) main.c -o main.o
+	./main.o
 
 register: $(DRIVER)
 	insmod ./$(MODULE)
