@@ -17,7 +17,7 @@ void print_map(char *map, int width, int height)
 	{
 		for (int j = 0; j < width; j++)
 		{
-			printf("%c", map[i*width+j]);
+			printf("%c", map[i * width + j]);
 		}
 		printf("\n");
 	}
@@ -42,8 +42,8 @@ int main (int argc, char *argv[])
 
 	if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
     {
-        perror("\n Error : Could not create socket \n");
-        exit(1);
+        printf("\n Error : Could not create socket \n");
+        return 1;
     } 
 
 	memset(&serv_addr, 0, sizeof(serv_addr));
@@ -53,8 +53,8 @@ int main (int argc, char *argv[])
 
     if( connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
     {
-       perror("\n Error : Connect Failed \n");
-       exit(1);
+       printf("\n Error : Connect Failed \n");
+       return 1;
     } 
 
 	printf("Enter width and height (separated by a space)");
@@ -64,26 +64,30 @@ int main (int argc, char *argv[])
     if(width == 0 && height == 0)
     {
         reqBuff[1] = 0;
-        write(sockfd, reqBuff, 2);
     }
     else
     {
         reqBuff[1] = width;
         reqBuff[2] = height;
-        write(sockfd, reqBuff, 3);
-    }    
+    }
+	write(sockfd, reqBuff, sizeof(reqBuff));
 
 	char response;
-	n = read(sockfd, &response, 1);
+	if (n = read(sockfd, &response, 1) != 1)
+	{
+		fprintf(stderr, "\nError : Failed to read response type\n");
+		close(sockfd);
+		return 1;
+	}
 
 	if (response == 'M')
 	{
 		server_map_resp serverMap;
 		read(sockfd, &serverMap, sizeof(serverMap));
 		int buffSize = serverMap.width * serverMap.height;
-		char mapBuff[buffSize];
+		char *mapBuff = malloc(buffSize + 1);
 		
-		while((n = read(sockfd, mapBuff, buffSize - 1)) > 0)
+		while((n = read(sockfd, mapBuff, sizeof(mapBuff))) > 0)
 		{
 			mapBuff[n] = 0;
 			printf("%s", mapBuff);
@@ -93,15 +97,17 @@ int main (int argc, char *argv[])
 		{
 			perror("\nError : Failed to receive reply\n");
 		}
+		
+		print_map(mapBuff, serverMap.width, serverMap.height);
 	}
 	else
 	{
 		server_err_resp serverErr;
 		read(sockfd, &serverErr, sizeof(serverErr));
 		int buffSize = serverErr.err_len;
-		char errBuff[buffSize];
+		char *errBuff = malloc(buffSize + 1);
 		
-		while((n = read(sockfd, errBuff, buffSize - 1)) > 0)
+		while((n = read(sockfd, errBuff, sizeof(errBuff))) > 0)
 		{
 			errBuff[n] = 0;
 			fprintf(stderr, "%s\n", errBuff);
