@@ -27,7 +27,6 @@ int main (int argc, char *argv[])
 {
 	int sockfd = 0, n = 0;
 	struct sockaddr_in serv_addr;
-	char recvBuff[BSIZE];
 
 	char reqBuff[3];
 	reqBuff[0] = 'M';
@@ -43,19 +42,19 @@ int main (int argc, char *argv[])
 
 	if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
     {
-        printf("\n Error : Could not create socket \n");
-        return 1;
+        perror("\n Error : Could not create socket \n");
+        exit(1);
     } 
 
-	memset(&serv_addr, '0', sizeof(serv_addr));
+	memset(&serv_addr, 0, sizeof(serv_addr));
 	serv_addr.sin_family = AF_INET;
 	serv_addr.sin_addr.s_addr = inet_addr(ip);
 	serv_addr.sin_port = htons(port);
 
     if( connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
     {
-       printf("\n Error : Connect Failed \n");
-       return 1;
+       perror("\n Error : Connect Failed \n");
+       exit(1);
     } 
 
 	printf("Enter width and height (separated by a space)");
@@ -74,28 +73,44 @@ int main (int argc, char *argv[])
         write(sockfd, reqBuff, 3);
     }    
 
-	n = read(sockfd, recvBuff, (sizeof(recvBuff) - 1));
-	if (n < 0)
-	{
-		printf("\n Error : Failed to receive reply\n");
-		return 1;
-	}
+	char response;
+	n = read(sockfd, &response, 1);
 
-	if (recvBuff[0] == 'E')
+	if (response == 'M')
 	{
-		fprintf(stderr, "Error: %s\n", recvBuff + 1);
-	}
-	else if (recvBuff[0] == 'M')
-	{
-		int width = recvBuff[1];
-		int height = recvBuff[2];
-		printf("Map size: %d x %d\n", width, height);
-		char *map = recvBuff + 3;
-		print_map(map, width, height);
+		server_map_resp serverMap;
+		read(sockfd, &serverMap, sizeof(serverMap));
+		int buffSize = serverMap.width * serverMap.height;
+		char mapBuff[buffSize];
+		
+		while((n = read(sockfd, mapBuff, buffSize - 1)) > 0)
+		{
+			mapBuff[n] = 0;
+			printf("%s", mapBuff);
+		}
+
+		if (n < 0)
+		{
+			perror("\nError : Failed to receive reply\n");
+		}
 	}
 	else
 	{
-		fprintf(stderr, "Error : Unrecognized protocol message\n");
+		server_err_resp serverErr;
+		read(sockfd, &serverErr, sizeof(serverErr));
+		int buffSize = serverErr.err_len;
+		char errBuff[buffSize];
+		
+		while((n = read(sockfd, errBuff, buffSize - 1)) > 0)
+		{
+			errBuff[n] = 0;
+			fprintf(stderr, "%s\n", errBuff);
+		}
+
+		if(n < 0)
+		{
+			perror("Error: Unrecognized protocol message");
+		}
 	}
 
 	close(sockfd);

@@ -82,8 +82,6 @@ static driver_status_t status =
 	-1     /* minor */	
 };
 
-/* TODO: get user and put user*/
-
 static int memory_copy(char* dst, const char* src)
 {
 	int count = 0;
@@ -152,10 +150,6 @@ static int device_release(inode, file)
 	struct inode* inode;
 	struct file*  file;
 {
-#ifdef _DEBUG
-	printk ("device_release(%p,%p)\n", inode, file);
-#endif
-
 	/* We're now ready for our next caller */
 	status.busy = false;
 
@@ -176,7 +170,7 @@ static ssize_t device_read(file, buffer, length, offset)
     int bytes_read = 0;
     int error = 0;
 
-    while (length > 0 &&status.buf_ptr) {
+    while (length > 0) {
         error = put_user(*status.buf_ptr++, buffer++);
         if (error == -EFAULT)
         {
@@ -230,8 +224,7 @@ static ssize_t device_write(file, buffer, length, offset)
 	return bytes_written;
 }
 
-static int device_ioctl(inode, file, ioctl_num, ioctl_param)
-	struct inode* inode;
+static long device_ioctl(file, ioctl_num, ioctl_param)
 	struct file* file;
 	unsigned int ioctl_num; /* number and param for ioctl  */
 	unsigned long ioctl_param;
@@ -289,6 +282,7 @@ static int device_ioctl(inode, file, ioctl_num, ioctl_param)
         default:
             break;
 	}
+	return 1;
 }
 
 
@@ -343,15 +337,15 @@ init_module(void)
 		{
 		    if (k < BSIZE)
 		    {
-		        initialsBuf[k] = initials[k];
+		        status.buf[k] = initials[k];
 		    } else {
-		        initialsBuf[k] = 0;
+		        status.buf[k] = 0;
 		    }
 		}
-		initialsBuf[k] = '\n';
+		status.buf[k] = '\n';
 		k++;
 	}
-	initialsBuf[k] = 0;
+	status.buf[k] = 0;
 
 	/* Register the character device (atleast try) */
 	status.major = register_chrdev
