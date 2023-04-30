@@ -55,7 +55,9 @@ int main (int argc, char *argv[])
 
 	printf("Enter width and height (separated by a space)");
     printf("If no customization of size is desired, enter 0 for both: ");
-    scanf_s("%d %d", &width, &height);
+    scanf("%d %d", &width, &height);
+
+    char reqBuff[];
 
     if(width == 0 && height == 0)
     {
@@ -70,20 +72,20 @@ int main (int argc, char *argv[])
         reqBuff[1] = width;
         reqBuff[2] = height;
     }
-	fwrite(sockfd, reqBuff, sizeof(reqBuff));
+	write(sockfd, reqBuff, sizeof(reqBuff));
 
 	char response;
-	if (fread(sockfd, &response, 1) != 1)
+	if (read(sockfd, &response, 1) != 1)
 	{
 		fprintf(stderr, "\nError : Failed to read response type\n");
-		fclose(sockfd);
+		close(sockfd);
 		return 1;
 	}
 
 	if (response == 'M')
 	{
 		server_map_resp serverMap;
-		fread(sockfd, &serverMap, sizeof(serverMap));
+		read(sockfd, &serverMap, sizeof(serverMap));
 		int buffSize = serverMap.width * serverMap.height;
 		char *mapBuff = malloc(buffSize + 1);
 		
@@ -103,7 +105,7 @@ int main (int argc, char *argv[])
 	else
 	{
 		server_err_resp serverErr;
-		fread(sockfd, &serverErr, sizeof(serverErr));
+		read(sockfd, &serverErr, sizeof(serverErr));
 		int buffSize = serverErr.err_len;
 		char *errBuff = malloc(buffSize + 1);
 		
@@ -119,7 +121,7 @@ int main (int argc, char *argv[])
 		}
 	}
 
-	fclose(sockfd);
+	close(sockfd);
 	return 0;
 	
 }
