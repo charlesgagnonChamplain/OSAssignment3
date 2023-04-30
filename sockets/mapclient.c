@@ -13,9 +13,9 @@
 
 void print_map(char *map, int width, int height)
 {
-	for (int i = 0; i < height; i++)
+	for(int i = 0; i < height; i++)
 	{
-		for (int j = 0; j < width; j++)
+		for(int j = 0; j < width; j++)
 		{
 			printf("%c", map[i * width + j]);
 		}
@@ -33,7 +33,7 @@ int main (int argc, char *argv[])
 {
 	int sockfd = 0, n = 0;
 	struct sockaddr_in serv_addr;
-    client_map_req request;
+    struct client_map_req request;
     int usr_height, usr_width;
 
 	int port = PORT;
@@ -53,10 +53,10 @@ int main (int argc, char *argv[])
 	serv_addr.sin_family = AF_INET;
 	serv_addr.sin_port = htons(port);
 
-    if (inet_pton(AF_INET, ip, &serv_addr.sin_addr) <= 0)
+    if(inet_pton(AF_INET, ip, &serv_addr.sin_addr) <= 0)
         cli_err("\nError : Could not add IP");
 
-    if( connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+    if(connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
         cli_err("\n Error : Connect Failed \n");
 
 	printf("Enter   width and height (separated by a space)");
@@ -74,18 +74,18 @@ int main (int argc, char *argv[])
     }
 
     n = write(sockfd, request, sizeof(request));
-    if (n < 0)
+    if(n < 0)
         cli_err("Error : Could not write to socket");
 
 	char response;
-    (read(sockfd, &response, 1);
+    read(sockfd, &response, 1);
 
-	if (response == 'M')
+	if(response == 'M')
 	{
 		server_map_resp serverMap;
 		read(sockfd, &serverMap, sizeof(serverMap));
-		int buffSize = serverMap.width * serverMap.height;
-		char *mapBuff = malloc(buffSize);
+		int buffSize = serverMap.width;
+		char mapBuff = malloc(buffSize);
 		
 		while((n = read(sockfd, mapBuff, buffSize - 1)) > 0)
 		{
@@ -93,19 +93,19 @@ int main (int argc, char *argv[])
 			printf("%s", mapBuff);
 		}
 
-		if (n < 0)
+		if(n < 0)
 		{
 			perror("\nError : Failed to receive reply\n");
 		}
 		
-		print_map(mapBuff, serverMap.width, serverMap.height);
+		//print_map(mapBuff, serverMap.width, serverMap.height);
 	}
 	else
 	{
 		server_err_resp serverErr;
 		read(sockfd, &serverErr, sizeof(serverErr));
 		int buffSize = serverErr.err_len;
-		char *errBuff = malloc(buffSize);
+		char errBuff = malloc(buffSize);
 		
 		while((n = read(sockfd, errBuff, buffSize - 1)) > 0)
 		{
