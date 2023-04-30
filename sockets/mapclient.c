@@ -33,7 +33,7 @@ int main (int argc, char *argv[])
 {
 	int sockfd = 0, n = 0;
 	struct sockaddr_in serv_addr;
-    struct client_map_req request;
+    client_map_req request;
     int usr_height, usr_width;
 
 	int port = PORT;
@@ -47,19 +47,25 @@ int main (int argc, char *argv[])
 	}
 
 	if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+    {
         cli_err("\n Error : Could not create socket \n");
+    }
 
 	memset(&serv_addr, 0, sizeof(serv_addr));
 	serv_addr.sin_family = AF_INET;
 	serv_addr.sin_port = htons(port);
 
     if(inet_pton(AF_INET, ip, &serv_addr.sin_addr) <= 0)
+    {
         cli_err("\nError : Could not add IP");
+    }
 
     if(connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+    {
         cli_err("\n Error : Connect Failed \n");
+    }
 
-	printf("Enter   width and height (separated by a space)");
+	printf("Enter width and height (separated by a space)");
     printf("If no customization of size is desired, enter 0 for both: ");
     scanf("%d %d", &usr_width, &usr_height);
 
@@ -75,7 +81,9 @@ int main (int argc, char *argv[])
 
     n = write(sockfd, request, sizeof(request));
     if(n < 0)
+    {
         cli_err("Error : Could not write to socket");
+    }
 
 	char response;
     read(sockfd, &response, 1);
@@ -85,7 +93,7 @@ int main (int argc, char *argv[])
 		server_map_resp serverMap;
 		read(sockfd, &serverMap, sizeof(serverMap));
 		int buffSize = serverMap.width;
-		char mapBuff = malloc(buffSize);
+		char mapBuff[buffSize];
 		
 		while((n = read(sockfd, mapBuff, buffSize - 1)) > 0)
 		{
@@ -105,7 +113,7 @@ int main (int argc, char *argv[])
 		server_err_resp serverErr;
 		read(sockfd, &serverErr, sizeof(serverErr));
 		int buffSize = serverErr.err_len;
-		char errBuff = malloc(buffSize);
+		char errBuff[buffSize];
 		
 		while((n = read(sockfd, errBuff, buffSize - 1)) > 0)
 		{
@@ -115,7 +123,7 @@ int main (int argc, char *argv[])
 
 		if(n < 0)
 		{
-			perror("Error: Unrecognized protocol message");
+			perror("Error : Unrecognized protocol message");
 		}
 	}
 
