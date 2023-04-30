@@ -1,50 +1,59 @@
+
 CC=gcc
 DEBUG=-g -D_DEBUG
-INCLUDE=-I. -I..
-FLAGS=-Wall -Wextra
-SERV_EXE=mapserver
-SERV_G_EXE=mapserverg
-SERV_G_C=mapserverg.c
-OBJ=mapserver.o
-CLI_EXE=mapclient
-CLI_C=mapclient.c
-CLI_G_EXE=mapclientg
-CLI_G_C=mapclientg.c
-TEST_FORK_C=../testForkExec.c
-TEST_FORK_EXE=../testForkExec
+DEFINE=-DMODULE -D__KERNEL__ -DLINUX
+WARNINGS=-Wall -Wmissing-prototypes -Wmissing-declarations
+#ISO=-ansi -pedantic
+CC_OPTIONS=-O1 $(WARNINGS) $(ISO) $(DEBUG) $(DEFINE)
 
-all: $(SERV_EXE) $(CLI_EXE) $(TEST_FORK_EXE) $(SERV_G_EXE) $(CLI_G_EXE)
+# Where to look for header files
+INC=-I. -I/usr/include -I/usr/src/kernels/`uname -r`/include
 
-$(SERV_EXE): $(OBJ)
-	$(CC) $(DEBUG) $(INCLUDE) $(FLAGS) $(OBJ) -o $(SERV_EXE)
+FT=forkTest.c
+DRIVER=ascii.o
+MODULE=ascii.ko
 
-$(CLI_EXE): $(CLI_C)
-	$(CC) $(DEBUG) $(INCLUDE) $(FLAGS) $(CLI_C) -o $(CLI_EXE)
+obj-m += $(DRIVER)
 
-$(TEST_FORK_EXE): $(TEST_FORK_C)
-	$(CC) $(DEBUG) $(INCLUDE) $(FLAGS) $(TEST_FORK_C) -o $(TEST_FORK_EXE)
+# rm -f "/dev/asciimap"
+# lsmod | grep "ascii"
+# make build
 
-$(SERV_G_EXE): $(SERV_G_C)
-	$(CC) $(DEBUG) $(INCLUDE) $(FLAGS) $(SERV_G_C) -o $(SERV_G_EXE)
+all:
+	sudo mknod -m 666 /dev/asciimap c 236 1	
+	$(CC) $(CC_OPTIONS) $(FT) -o forkTest
+	DIR=$(PWD)
+	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
+	cd $(DIR)
 
-$(CLI_G_EXE): $(CLI_G_C)
-	$(CC) $(DEBUG) $(INCLUDE) $(FLAGS) $(CLI_G_C) -o $(CLI_G_EXE)
-
-%.o: %.c
-	$(CC) -c $(DEBUG) $(INCLUDE) $(FLAGS) $<
-
-start:
-	./$(SERV_EXE) &
-	netstat -vatn | grep 23032
-
-kill:
-	killall ./$(SERV_EXE)
-
-kill-client:
-	kill `ps -ef | grep tmpid | grep -v grep | awk '{print $$2}'`
-
-test:
-	for i in `pgrep -f tmpid`; do kill -10 $$i; sleep 1; done;
+build:
+	make all
+	make register
 
 clean:
-	rm -f $(SERV_EXE) $(CLI_EXE) $(TEST_FORK_EXE)
+	rm -f $(DRIVER)
+	DIR=$(PWD)
+	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) clean
+	cd $(DIR)
+
+ascii.o: ascii.c
+	$(CC) $(WARNINGS) ascii.c -c -o ascii.o
+
+test:
+	$(CC) $(WARNINGS) forkTest.c -o forkTest
+	./forkTest
+
+main:
+	$(CC) $(WARNINGS) main.c -o main
+	./main
+
+register: $(DRIVER)
+	sudo insmod ./$(MODULE)
+	modinfo $(MODULE)
+
+clean-all:
+	make clean
+	sudo rmmod ascii
+	lsmod
+	
+# EOF
