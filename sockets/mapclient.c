@@ -28,9 +28,6 @@ int main (int argc, char *argv[])
 	int sockfd = 0, n = 0;
 	struct sockaddr_in serv_addr;
 
-	char reqBuff[3];
-	reqBuff[0] = 'M';
-
 	int port = PORT;
 	char* ip = IP;
 	int width, height;
@@ -48,7 +45,6 @@ int main (int argc, char *argv[])
 
 	memset(&serv_addr, 0, sizeof(serv_addr));
 	serv_addr.sin_family = AF_INET;
-	serv_addr.sin_addr.s_addr = inet_addr(ip);
 	serv_addr.sin_port = htons(port);
 
     if( connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
@@ -58,36 +54,40 @@ int main (int argc, char *argv[])
     } 
 
 	printf("Enter width and height (separated by a space)");
-    printf("If no customization of size is required, enter 0 for both: ");
-    scanf("%d %d", &width, &height);
+    printf("If no customization of size is desired, enter 0 for both: ");
+    scanf_s("%d %d", &width, &height);
 
     if(width == 0 && height == 0)
     {
+        char reqBuff[2];
+        reqBuff[0] = 'M';
         reqBuff[1] = 0;
     }
     else
     {
+        char reqBuff[3];
+        reqBuff[0] = 'M';
         reqBuff[1] = width;
         reqBuff[2] = height;
     }
-	write(sockfd, reqBuff, sizeof(reqBuff));
+	fwrite(sockfd, reqBuff, sizeof(reqBuff));
 
 	char response;
-	if (n = read(sockfd, &response, 1) != 1)
+	if (fread(sockfd, &response, 1) != 1)
 	{
 		fprintf(stderr, "\nError : Failed to read response type\n");
-		close(sockfd);
+		fclose(sockfd);
 		return 1;
 	}
 
 	if (response == 'M')
 	{
 		server_map_resp serverMap;
-		read(sockfd, &serverMap, sizeof(serverMap));
+		fread(sockfd, &serverMap, sizeof(serverMap));
 		int buffSize = serverMap.width * serverMap.height;
 		char *mapBuff = malloc(buffSize + 1);
 		
-		while((n = read(sockfd, mapBuff, sizeof(mapBuff))) > 0)
+		while((n = fread(sockfd, mapBuff, sizeof(mapBuff))) > 0)
 		{
 			mapBuff[n] = 0;
 			printf("%s", mapBuff);
@@ -103,11 +103,11 @@ int main (int argc, char *argv[])
 	else
 	{
 		server_err_resp serverErr;
-		read(sockfd, &serverErr, sizeof(serverErr));
+		fread(sockfd, &serverErr, sizeof(serverErr));
 		int buffSize = serverErr.err_len;
 		char *errBuff = malloc(buffSize + 1);
 		
-		while((n = read(sockfd, errBuff, sizeof(errBuff))) > 0)
+		while((n = fread(sockfd, errBuff, sizeof(errBuff))) > 0)
 		{
 			errBuff[n] = 0;
 			fprintf(stderr, "%s\n", errBuff);
@@ -119,7 +119,7 @@ int main (int argc, char *argv[])
 		}
 	}
 
-	close(sockfd);
+	fclose(sockfd);
 	return 0;
 	
 }
