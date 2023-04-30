@@ -57,22 +57,20 @@ int main (int argc, char *argv[])
     printf("If no customization of size is desired, enter 0 for both: ");
     scanf("%d %d", &width, &height);
 
-    char reqBuff[];
+    char reqBuff[3];
+    reqBuff[0] = 'M';
 
     if(width == 0 && height == 0)
     {
-        char reqBuff[2];
-        reqBuff[0] = 'M';
         reqBuff[1] = 0;
+        write(sockfd, reqBuff, 2);
     }
     else
     {
-        char reqBuff[3];
-        reqBuff[0] = 'M';
         reqBuff[1] = width;
         reqBuff[2] = height;
+        write(sockfd, reqBuff, 3);
     }
-	write(sockfd, reqBuff, sizeof(reqBuff));
 
 	char response;
 	if (read(sockfd, &response, 1) != 1)
@@ -89,7 +87,7 @@ int main (int argc, char *argv[])
 		int buffSize = serverMap.width * serverMap.height;
 		char *mapBuff = malloc(buffSize + 1);
 		
-		while((n = fread(sockfd, mapBuff, sizeof(mapBuff))) > 0)
+		while((n = read(sockfd, mapBuff, sizeof(mapBuff))) > 0)
 		{
 			mapBuff[n] = 0;
 			printf("%s", mapBuff);
@@ -109,7 +107,7 @@ int main (int argc, char *argv[])
 		int buffSize = serverErr.err_len;
 		char *errBuff = malloc(buffSize + 1);
 		
-		while((n = fread(sockfd, errBuff, sizeof(errBuff))) > 0)
+		while((n = read(sockfd, errBuff, sizeof(errBuff))) > 0)
 		{
 			errBuff[n] = 0;
 			fprintf(stderr, "%s\n", errBuff);
