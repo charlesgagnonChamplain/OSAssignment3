@@ -1,4 +1,4 @@
-#include "common.h"
+#include "ascii.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,6 +7,7 @@
 #include <fcntl.h>
 
 #define DEVICE "/dev/asciimap"
+
 
 int main(int argc, char *argv[])
 {

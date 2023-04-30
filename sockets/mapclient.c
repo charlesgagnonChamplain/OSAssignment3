@@ -9,19 +9,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <errno.h>
-#include <arpa/inet.h> 
-
-void print_map(char *map, int width, int height)
-{
-	for(int i = 0; i < height; i++)
-	{
-		for(int j = 0; j < width; j++)
-		{
-			printf("%c", map[i * width + j]);
-		}
-		printf("\n");
-	}
-}
+#include <arpa/inet.h>
 
 void cli_err(const char *err_msg)
 {
@@ -65,7 +53,7 @@ int main (int argc, char *argv[])
         cli_err("\n Error : Connect Failed \n");
     }
 
-	printf("Enter width and height (separated by a space)");
+	printf("Enter width and height (separated by a space)\n");
     printf("If no customization of size is desired, enter 0 for both: ");
     scanf("%d %d", &usr_width, &usr_height);
 
@@ -79,7 +67,7 @@ int main (int argc, char *argv[])
         request.height = usr_height;
     }
 
-    n = write(sockfd, request, sizeof(request));
+    n = write(sockfd, &request, sizeof(request));
     if(n < 0)
     {
         cli_err("Error : Could not write to socket");
@@ -105,8 +93,6 @@ int main (int argc, char *argv[])
 		{
 			perror("\nError : Failed to receive reply\n");
 		}
-		
-		//print_map(mapBuff, serverMap.width, serverMap.height);
 	}
 	else
 	{
