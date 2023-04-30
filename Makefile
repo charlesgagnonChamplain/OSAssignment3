@@ -29,12 +29,10 @@ all:
 build:
 	make all
 	make register
-	eval `dmesg | grep mknod | tail -1`
 
 clean:
 	rm -f $(DRIVER)
 	DIR=$(PWD)
-	//rm main forkTest
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) clean
 	cd $(DIR)
 
@@ -50,9 +48,8 @@ main:
 	./main
 
 register: $(DRIVER)
-	insmod ./$(MODULE)
+	sudo insmod ./$(MODULE)
 	modinfo $(MODULE)
-	lsmod | grep asciimap
 
 clean-all:
 	make clean
