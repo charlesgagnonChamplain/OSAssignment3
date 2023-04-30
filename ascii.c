@@ -13,12 +13,11 @@
 
 #include "ascii.h"
 
-#define BSIZE 1024
+#define BSIZE 2048
 #define STATIC_ROWSIZE 50
 #define STATIC_COLSIZE 51
 #define STATIC_BSIZE ((STATIC_COLSIZE * STATIC_ROWSIZE) + 1)
 
-char initialsBuf[BSIZE*BSIZE];
 const char* initials = "ACCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCH\n"
 					"A                                                H\n"
 					"A                                                H\n"

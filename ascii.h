@@ -35,7 +35,8 @@
 /* Device Declarations **************************** */
 
 /* The maximum length of the message from the device */
-#define BSIZE 1024
+#define BSIZE 2048
+#define BUF_SIZE (BSIZE * BSIZE + BSIZE + 1)
 
 #define MAJOR_NUM 	130
 #define IOCTL_RESET_MAP 	_IO(MAJOR_NUM, 0) /*reset to the default map*/
@@ -62,7 +63,7 @@ typedef struct _driver_status
 	bool  busy;
 
 	/* The message the device will give when asked */
-	char  buf[BSIZE];
+	char  buf[BUF_SIZE];
 
 	/* How far did the process reading the message
 	 * get? Useful if the message is larger than the size
