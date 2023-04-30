@@ -47,6 +47,12 @@ int main (int argc, char *argv[])
 	serv_addr.sin_family = AF_INET;
 	serv_addr.sin_port = htons(port);
 
+    if (inet_pton(AF_INET, ip, &serv_addr.sin_addr) <= 0)
+    {
+        printf("\nError : Could not add IP");
+        return 1;
+    }
+
     if( connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
     {
        printf("\n Error : Connect Failed \n");
