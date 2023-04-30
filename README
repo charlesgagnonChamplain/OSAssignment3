@@ -1,37 +1,22 @@
-README
-======
+To run:
+- make all
+- ./mapserver in one terminal
+- ./mapclient in one terminal
+- If you want to change the IP address put it after the executable name as an argument
 
-Intro
------
+Server Sample Output:
 
-This example consists of two parts:
-  - ASCII character device driver
-  - Driver test program
+Received request
+Command char: M
+execve failed: No such file or directory
+Received map request
+Wrote message:
+M22If I told you once, I told you 11 times - Hello, world
+Message has length: 65
+Child, signing off!
 
-EMPLOY EXTREME CAUTION when playing with this.
-It's not a production quality 'software'.
-NOT recommended to use on systems with important
-data or tasks.
+Client Sample Output:
 
-Installation and Execution
---------------------------
-
-To install compile first:
-
-$ make
-
-Then register an ASCII driver:
-
-$ make register
-
-For the latter to succeed you have to have root
-privileges and not to have module called 'ascii'.
-Otherwise, you'll have to tweak the Makefile.
-
-If you don't want debugging messages, also tweak
-the Makefile.
-
-To run the test program type:
-$ ./ascii-test
-
-EOF
+Enter width and height (separated by a space)
+If no customization of size is desired, enter 0 for both: 50 50
+If I told you once, I told you 12 times - Hello, world
