@@ -44,6 +44,7 @@ main(argc, argv)
 			if(i == 30)
 			{
 				n = write(fd, "WRITE", 5);
+				(void) printf("write(/dev/ASCII) successful\n");
 
 				if(n < 0)
 					perror("write(/dev/ASCII) failed");
