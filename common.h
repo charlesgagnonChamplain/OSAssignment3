@@ -11,7 +11,7 @@
 
 /* Genereic Buffer Size */
 /* may be made up from the air */
-#define BSIZE             1024
+#define BSIZE             2048
 
 /* All these are to be treated as blanks or delimiters */
 #define BLANK_CHARS       " \n\t\r'"
@@ -27,6 +27,10 @@
 #define	min(a, b)         (a < b ? a : b)
 #define	max(a, b)         (a > b ? a : b)
 
+#define MAJOR_NUM 	130
+#define IOCTL_RESET_MAP 	_IO(MAJOR_NUM, 0) /*reset to the default map*/
+#define IOCTL_ZERO_OUT		_IO(MAJOR_NUM, 1) /*zeros out the buffer */
+#define IOCTL_CHECK_CONSISTENCY _IO(MAJOR_NUM, 2) /*checks that consistency*/
 
 /* Debugging / Logging Macros */
 

@@ -39,16 +39,16 @@ ascii.o: ascii.c
 	$(CC) $(WARNINGS) ascii.c -c -o ascii.o
 
 test:
-	$(CC) $(WARNINGS) forkTest.c -o forkTest
-	./forkTest
+	$(CC) $(WARNINGS) testDriver.c -o testDriver
+	./testDriver
 
 main:
 	$(CC) $(WARNINGS) main.c -o main
 	./main
 
-test-driver:
-	$(CC) $(WARNINGS) testDriver.c -o testDriver
-	./testDriver
+fork-test:
+	$(CC) $(WARNINGS) forkTest.c -o forkTest
+	./forkTest
 
 register: $(DRIVER)
 	sudo insmod ./$(MODULE)
