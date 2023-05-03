@@ -21,7 +21,6 @@ obj-m += $(DRIVER)
 
 all:
 	sudo mknod -m 666 /dev/asciimap c 236 1	
-	$(CC) $(CC_OPTIONS) $(FT) -o forkTest
 	DIR=$(PWD)
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
 	cd $(DIR)

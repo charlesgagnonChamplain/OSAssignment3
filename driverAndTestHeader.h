@@ -1,6 +1,14 @@
 //
 // Created by ananda.shumockbailey on 5/2/2023.
 //
+#include <linux/kernel.h>   /* We're doing kernel work */
+#include <linux/module.h>   /* Specifically, a module */
+#include <linux/ioctl.h>
+
+/* For character devices */
+#include <linux/fs.h>       /* The character device
+                             * definitions are here
+                             */
 
 #ifndef OSASSIGNMENT3_DRIVERANDTESTHEADER_H
 #define OSASSIGNMENT3_DRIVERANDTESTHEADER_H

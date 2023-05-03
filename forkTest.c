@@ -7,7 +7,6 @@
 #include <stdlib.h>
 #include <getopt.h>
 #include <string.h>
-#include "driverAndTestHeader.h"
 #define _GNU_SOURCE
 
 char* genMapFromFile(char* fileName, int w, int h, int line);
