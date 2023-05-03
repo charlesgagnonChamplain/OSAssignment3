@@ -12,7 +12,6 @@
  */
 
 #include "ascii.h"
-#include "driverAndTestHeader.h"
 
 #define BSIZE 2048
 #define STATIC_ROWSIZE 50

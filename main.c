@@ -12,7 +12,6 @@
 #include <unistd.h>
 
 #include "common.h"
-#include "driverAndTestHeader.h"
 
 int
 main(argc, argv)

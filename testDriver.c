@@ -1,6 +1,4 @@
 #include "common.h"
-#include "driverAndTestHeader.h"
-#include "ascii.h"
 
 #include <stdio.h>
 #include <stdlib.h>
