@@ -24,7 +24,7 @@ main(argc, argv)
 
 	if((fd = open("/dev/asciimap", O_RDWR)) >= 0)
 	{
-		for(i = 10; i <= 60; i += 5)
+		for(i = 10; i <= 100; i += 5)
 		{
 			n = read(fd, buf, i);
 
@@ -44,7 +44,7 @@ main(argc, argv)
 
 			if(i == 30)
 			{
-				n = write(fd, "BLAH", 4);
+				n = write(fd, "WRITE", 5);
 
 				if(n < 0)
 					perror("write(/dev/ASCII) failed");

@@ -1,4 +1,5 @@
 #include "common.h"
+
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
@@ -13,39 +14,42 @@
 
 #define MIN(a, b) (a < b ? a : b)
 
-// Log
-#define LOG "mapserver.log"
-int log_fd = -1;
+/* Error codes */
+#define ECHAR -1
+#define ENEGHEIGHT -2
+#define ENEGWIDTH -3
 
-// Errors
-#define CHAR_ERR -1
-#define HEIGHT_ERR -2
-#define WIDTH_ERR -3
-const char* ERRORS[] = {"ERROR: Unrecognized char",
+#define LOG_FILENAME "mapserver.log"
+
+int logfd = -1;
+
+const char* ERR_MSGS[] = {"ERROR: Unrecognized char",
 			"ERROR: Height is negative",
 			"ERROR: Width is negative"};
 
-void log_message(const char* msg) {
-	if (log_fd >= 0)
-		write(log_fd, msg, strlen(msg));
-	write(log_fd, "\n", 1);
+void logmsg(const char* msg)
+{
+	if (logfd >= 0)
+		write(logfd, msg, strlen(msg));
+	write(logfd, "\n", 1);
 }
 
-void fatal(const char* msg) {
+void fatal(const char* msg)
+{
 	perror(msg);
 	if (msg != NULL)
-		log_message(msg);
+		logmsg(msg);
 	exit(1);
 }
 
-int request_check(const client_map_req* cli_req)
+int is_request_good(const client_map_req* cli_req)
 {
 	int returnval = 0;
 
 	if (cli_req->width < 0)
-		returnval = WIDTH_ERR;
+		returnval = ENEGWIDTH;
 	else if (cli_req->width != 0 && cli_req->height < 0)
-		returnval = HEIGHT_ERR;
+		returnval = ENEGHEIGHT;
 	else
 		returnval = 0;
 
@@ -60,10 +64,10 @@ int respond_err(int connfd, int err)
 	index = err * -1 - 1;
 
 	server_err_resp srv_resp;
-	srv_resp.err_len = strlen(ERRORS[index]);
-	strncpy(msg, ERRORS[index], 50);
+	srv_resp.err_len = strlen(ERR_MSGS[index]);
+	strncpy(msg, ERR_MSGS[index], 50);
 
-	n = write(connfd, ERROR, 1);
+	n = write(connfd, SRV_ERR_CHAR, 1);
 	if (n < 0)
 		fatal(NULL);
 
@@ -75,11 +79,25 @@ int respond_err(int connfd, int err)
 	if (n < 0)
 		fatal(NULL);
 
-	log_message("Responded to error with message.");
+	logmsg("Responded to error with message.");
+
+	/* Log extra info */
+	{
+		char errmsg[80] = {0};
+		strncpy(errmsg, ERR_MSGS[index], 79);
+		logmsg("Error message:");
+		logmsg(errmsg);
+	}
+
+#ifdef _DEBUG
+	printf("Wrote message: %s\n", msg);
+	printf("Message length: %d\n", n);
+#endif
+
 	return 0;
 }
 
-int request_response(int connfd, const client_map_req* cli_req)
+int respond_to_map_request(int connfd, const client_map_req* cli_req)
 {
 	int width,
 	    height;
@@ -88,9 +106,14 @@ int request_response(int connfd, const client_map_req* cli_req)
 	height = cli_req->height;
 	server_map_resp map_resp;
 
+	
+	/* Check message validity */
 	int err = 0;
-	if ((err = request_check(cli_req)) < 0)
+	if ((err = is_request_good(cli_req)) < 0)
 	{
+#ifdef _DEBUG
+		printf("Problem with map request\n");
+#endif
 		respond_err(connfd, err);
 		return -1;
 	}
@@ -114,33 +137,53 @@ int request_response(int connfd, const client_map_req* cli_req)
 	if (n < 0)
 		fatal("Error reading /dev/asciimap");
 	close(mapfd);
+
+#define MSGLEN (BSIZE + 50)
+
+	/* The complete message to write to the socket */
 	char msg[MSGLEN] = {0};
+
+	/* The number of characters to write to the socket */
 	int str_len = 0;
+
+	/* The actual length of the map to write */
 	int map_len = 0;
 
-	memset(&msg[str_len], BSIZE, sizeof(char));
+	memset(&msg[str_len], SRV_MAP_CHAR[0], sizeof(char));
 	str_len += sizeof(char);
 	memcpy(&msg[str_len], &map_resp, sizeof(map_resp));
 	str_len += sizeof(map_resp);
 
 	map_len = MIN(MSGLEN - str_len - 1, (width + 1) * height);
 
+	/* Cut up the lines until they're the correct width */
 	{
+		/* Create a file for the other program to read */
 		int fd = creat("tmp.map", S_IRWXU);
 		if (fd < 0)
 			fatal("Could not create tmp.map");
 
+		/* Write to the new file */
 		write(fd, map, strlen(map));
+
+		/* Close the file for someone else to use */
 		close(fd);
 
+		/* Create a file for the other program to write to */
 		fd = creat("map4client.map", S_IRWXU);
+
+		/* Save our stdout so we don't lose it */
 		int save_out = dup(STDOUT_FILENO);
 
+		/* dup2 stdout -- writing to stdout won't work until we set
+		 * this back to normal. */
 		if (-1 == dup2(fd, STDOUT_FILENO))
 			fatal("Failed to redirect stdout");
 
+		/* Get ready to spawn a new process... */
 		pid_t pid = fork();
 
+		/* Child */
 		if (pid == 0)
 		{
 			char* new_argv[5];
@@ -161,17 +204,21 @@ int request_response(int connfd, const client_map_req* cli_req)
 			execve("../testForkExec", new_argv, NULL);
 			fatal("execve failed");
 		}
+		/* Parent */
 		else
 		{
 			int err = 0;
 			wait(NULL);
 
+			/* Clean up the mess we made for the child */
 			fflush(stdout);
 			close(fd);
 
 			dup2(save_out, STDOUT_FILENO);
 
 			close(fd);
+
+			/* Now read our lovely new map file */
 			fd = open("map4client.map", O_RDONLY);
 
 			n = read(fd, map, map_len);
@@ -196,14 +243,25 @@ int request_response(int connfd, const client_map_req* cli_req)
 	if (n < 0)
 		fatal(NULL);
 
+#undef MSGLEN
+
+#ifdef _DEBUG
+	printf("Received map request\n");
+	printf("Wrote message:\n");
+	write(STDOUT_FILENO, msg, str_len);
+	printf("Message has length: %d\n", str_len);
+#endif
+
+	/* Handle logging */
 	{
 		char loginfo[80] = {0};
 		snprintf(loginfo, 80, "Responded to map request with width %d and height %d", width, height);
-		log_message(loginfo);
+		logmsg(loginfo);
 	}
 
 	return 0;
 }
+
 
 int main(void)
 {
@@ -214,7 +272,7 @@ int main(void)
 	int n;
 
 	/* init logging */
-	log_fd = open(LOG, O_TRUNC | O_CREAT | O_WRONLY, S_IRWXU); 
+	logfd = open(LOG_FILENAME, O_TRUNC | O_CREAT | O_WRONLY, S_IRWXU); 
 
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockfd < 0)
@@ -236,12 +294,16 @@ int main(void)
 		connfd = accept(sockfd,
 				(struct sockaddr *) &cli_addr,
 				&clilen);
+#ifdef _DEBUG
+		printf("Received request\n");
+#endif
 
 		if (connfd < 0)
 			fatal(NULL);
 
 		memset(&serv_addr, 0, sizeof(serv_addr));
 
+		/* Identify request */
 		{
 			pid_t pid = fork();
 			if (pid == 0)
@@ -251,28 +313,34 @@ int main(void)
 				if (n < 0)
 					fatal(NULL);
 
+#ifdef _DEBUG
+				printf("Command char: %c\n", cmd);
+#endif
 				switch (cmd)
 				{
 				case 'M':
 					{
-						log_message("Received map request.");
+						logmsg("Received map request.");
 						client_map_req cli_req;
 						n = read(connfd, &cli_req, sizeof(cli_req));
 						if (n < 0)
 							fatal(NULL);
-						request_response(connfd, &cli_req);
-						log_message("Successfully responded to map request.");
+						respond_to_map_request(connfd, &cli_req);
+						logmsg("Successfully responded to map request.");
 					}
 					break;
 				default:
-					log_message("Received unrecognized request.");
-					respond_err(connfd, CHAR_ERR);
-					log_message("Successfully responded to unrecognized request.");
+					logmsg("Received unrecognized request.");
+					respond_err(connfd, ECHAR);
+					logmsg("Successfully responded to unrecognized request.");
 					break;
 				}
 
-				log_message("Closing connection.");
+				logmsg("Closing connection.");
 				close(connfd);
+#ifdef _DEBUG
+				printf("Child, signing off!\n");
+#endif
 				exit(0);
 			}
 			else if (pid < 0)
@@ -284,6 +352,7 @@ int main(void)
 		}
 	}
 
-	close(log_fd);
+	/* Stop logging */
+	close(logfd);
 
 }

@@ -2,11 +2,10 @@
 
 #define PORT 23032
 #define IP "127.0.0.1"
-
-#define REQUEST 'M'
-#define ERROR "E"
 #define BSIZE 1024
 #define MSGLEN (BSIZE + 50)
+#define SRV_ERR_CHAR "E"
+#define SRV_MAP_CHAR "M"
 
 typedef struct client_map_request
 {

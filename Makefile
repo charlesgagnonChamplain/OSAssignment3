@@ -47,6 +47,10 @@ main:
 	$(CC) $(WARNINGS) main.c -o main
 	./main
 
+test-driver:
+	$(CC) $(WARNINGS) testDriver.c -o testDriver
+	./testDriver
+
 register: $(DRIVER)
 	sudo insmod ./$(MODULE)
 	modinfo $(MODULE)
